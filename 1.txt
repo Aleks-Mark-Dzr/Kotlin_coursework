@@ -1,1 +1,0 @@
-git remote add Kotlin_coursework https://gitlab.skillbox.ru/markov_aleksei_2/kotlin_coursework.git

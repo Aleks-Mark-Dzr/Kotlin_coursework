@@ -3,6 +3,9 @@ package com.example.a15_coursework
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import java.time.LocalTime
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
 
 data class Truck(
     val id: Int,
@@ -52,7 +55,6 @@ fun generateRandomCargo(truckLoadCapacity: Int): List<Cargo> {
     var remainingCapacity = truckLoadCapacity
     val cargoType: String = products.random().type
     var uploadingTime = 0
-//    var uploadCargo = 0
 
     if (cargoType == CargoType.FOOD.name) {
         while (remainingCapacity > 0) {
@@ -60,7 +62,6 @@ fun generateRandomCargo(truckLoadCapacity: Int): List<Cargo> {
             if (randomProduct.type == CargoType.FOOD.name){
                 if (randomProduct.weight <= remainingCapacity) {
                     cargo.add(randomProduct)
-//                    uploadCargo += randomProduct.uploadingTime
                     remainingCapacity -= randomProduct.weight
                 } else {
                     uploadingTime = cargo.sumBy { uploadingTime }
@@ -75,7 +76,6 @@ fun generateRandomCargo(truckLoadCapacity: Int): List<Cargo> {
             if (randomProduct.type !== CargoType.FOOD.name){
                 if (randomProduct.weight <= remainingCapacity) {
                     cargo.add(randomProduct)
-//                    uploadCargo += randomProduct.uploadingTime
                     remainingCapacity -= randomProduct.weight
                 } else {
                     break
@@ -109,6 +109,7 @@ fun main() = runBlocking {
     val channel = Channel<Truck>()
     val ports = 3 // Количество доступных портов разгрузки
     val portQueue = Channel<Truck>(Channel.UNLIMITED) // Очередь ожидания портов
+    val portMutex = Mutex() // Мьютекс для контроля доступа к очереди портов
 
     // Запускаем корутины производителя и потребителя
     val producerJob = launch {

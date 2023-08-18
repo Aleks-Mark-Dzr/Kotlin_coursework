@@ -106,20 +106,20 @@ fun produceTrucks(channel: Channel<Truck>) = runBlocking {
 
 @OptIn(ExperimentalCoroutinesApi::class)
 fun main() = runBlocking {
-    val channel = Channel<Truck>()
+    val uploadChannel = Channel<Truck>(capacity = 3)
     val ports = 3 // Количество доступных портов разгрузки
     val portQueue = Channel<Truck>(Channel.UNLIMITED) // Очередь ожидания портов
     val portMutex = Mutex() // Мьютекс для контроля доступа к очереди портов
 
     // Запускаем корутины производителя и потребителя
     val producerJob = launch {
-        produceTrucks(channel)
+        produceTrucks(uploadChannel)
     }
 
     val consumerJobs = List(ports) { port ->
         launch {
-            for (truck in channel) {
-                if (portQueue.isEmpty) {
+            for (truck in uploadChannel) {
+                if (portQueue.isEmpty and uploadChannel.isEmpty) {
                     println("${LocalTime.now()} - Грузовик № ${truck.id}, грузоподъемностью ${truck.loadCapacity} прибыл на порт ${portMutex.withLock { port }} для разгрузки")
                     delay(truck.uploadTime.toLong())
                     println("${LocalTime.now()} - Грузовик № ${truck.id} разгружен на порту ${portMutex.withLock { port }} за время ${truck.uploadTime}")
@@ -135,9 +135,7 @@ fun main() = runBlocking {
     launch {
         for (truck in portQueue) {
             val port = portQueue.receive()
-            println("${LocalTime.now()} - Грузовик № ${truck.id}, грузоподъемностью ${truck.loadCapacity} прибыл на порт ${port.id} для разгрузки (из очереди)")
-            delay(truck.uploadTime.toLong())
-            println("${LocalTime.now()} - Грузовик № ${truck.id} разгружен на порту ${port.id} за время ${truck.uploadTime}")
+            println("${LocalTime.now()} - Грузовик № ${truck.id}, грузоподъемностью ${truck.loadCapacity} прибыл в очередь № ${port.id} для разгрузки")
         }
     }
 

@@ -120,9 +120,9 @@ fun main() = runBlocking {
         launch {
             for (truck in channel) {
                 if (portQueue.isEmpty) {
-                    println("${LocalTime.now()} - Грузовик № ${truck.id}, грузоподъемностью ${truck.loadCapacity} прибыл на порт $port для разгрузки")
+                    println("${LocalTime.now()} - Грузовик № ${truck.id}, грузоподъемностью ${truck.loadCapacity} прибыл на порт ${portMutex.withLock { port }} для разгрузки")
                     delay(truck.uploadTime.toLong())
-                    println("${LocalTime.now()} - Грузовик № ${truck.id} разгружен на порту $port за время ${truck.uploadTime}")
+                    println("${LocalTime.now()} - Грузовик № ${truck.id} разгружен на порту ${portMutex.withLock { port }} за время ${truck.uploadTime}")
                 } else {
                     portQueue.send(truck)
                     println("${LocalTime.now()} - Грузовик № ${truck.id} встал в очередь")

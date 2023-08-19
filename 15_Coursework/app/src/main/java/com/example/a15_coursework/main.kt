@@ -59,7 +59,7 @@ fun generateRandomCargo(truckLoadCapacity: Int): List<Cargo> {
     if (cargoType == CargoType.FOOD.name) {
         while (remainingCapacity > 0) {
             val randomProduct = products.random()
-            if (randomProduct.type == CargoType.FOOD.name){
+            if (randomProduct.type == CargoType.FOOD.name) {
                 if (randomProduct.weight <= remainingCapacity) {
                     cargo.add(randomProduct)
                     remainingCapacity -= randomProduct.weight
@@ -73,7 +73,7 @@ fun generateRandomCargo(truckLoadCapacity: Int): List<Cargo> {
     } else {
         while (remainingCapacity > 0) {
             val randomProduct = products.random()
-            if (randomProduct.type !== CargoType.FOOD.name){
+            if (randomProduct.type !== CargoType.FOOD.name) {
                 if (randomProduct.weight <= remainingCapacity) {
                     cargo.add(randomProduct)
                     remainingCapacity -= randomProduct.weight
@@ -118,14 +118,24 @@ fun main() = runBlocking {
 
     val consumerJobs = List(ports) { port ->
         launch {
-            for (truck in uploadChannel) {
-                if (portQueue.isEmpty and uploadChannel.isEmpty) {
-                    println("${LocalTime.now()} - Грузовик № ${truck.id}, грузоподъемностью ${truck.loadCapacity} прибыл на порт ${portMutex.withLock { port }} для разгрузки")
+
+            if (portQueue.isEmpty) {
+                for (truck in uploadChannel) {
+                    if (uploadChannel.isEmpty) {
+                        println("${LocalTime.now()} - Грузовик № ${truck.id}, грузоподъемностью ${truck.loadCapacity} прибыл на порт ${portMutex.withLock { port }} для разгрузки")
+                        delay(truck.uploadTime.toLong())
+                        println("${LocalTime.now()} - Грузовик № ${truck.id} разгружен на порту ${portMutex.withLock { port }} за время ${truck.uploadTime}")
+                    } else {
+                        portQueue.send(truck)
+                        println("${LocalTime.now()} - Грузовик № ${truck.id} встал в очередь")
+                    }
+                }
+            } else {
+                for (truck in portQueue) {
+                    val portQ = portQueue.receive()
+                    println("${LocalTime.now()} - Грузовик № ${truck.id}, грузоподъемностью ${truck.loadCapacity} прибыл на порт ${portMutex.withLock { port }} для разгрузки из очереди № $portQ")
                     delay(truck.uploadTime.toLong())
                     println("${LocalTime.now()} - Грузовик № ${truck.id} разгружен на порту ${portMutex.withLock { port }} за время ${truck.uploadTime}")
-                } else {
-                    portQueue.send(truck)
-                    println("${LocalTime.now()} - Грузовик № ${truck.id} встал в очередь")
                 }
             }
         }

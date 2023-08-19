@@ -133,7 +133,7 @@ fun main() = runBlocking {
             } else {
                 for (truck in portQueue) {
                     val portQ = portQueue.receive()
-                    println("${LocalTime.now()} - Грузовик № ${truck.id}, грузоподъемностью ${truck.loadCapacity} прибыл на порт ${portMutex.withLock { port }} для разгрузки из очереди № $portQ")
+                    println("${LocalTime.now()} - Грузовик № ${truck.id}, грузоподъемностью ${truck.loadCapacity} прибыл на порт ${portMutex.withLock { port }} для разгрузки из очереди № ${portQ.id}")
                     delay(truck.uploadTime.toLong())
                     println("${LocalTime.now()} - Грузовик № ${truck.id} разгружен на порту ${portMutex.withLock { port }} за время ${truck.uploadTime}")
                 }

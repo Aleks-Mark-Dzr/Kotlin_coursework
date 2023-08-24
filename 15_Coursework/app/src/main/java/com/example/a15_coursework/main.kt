@@ -106,7 +106,7 @@ fun produceTrucks(channel: Channel<Truck>) = runBlocking {
 
 @OptIn(ExperimentalCoroutinesApi::class)
 fun main() = runBlocking {
-    val uploadChannel = Channel<Truck>(capacity = 3)
+    val uploadChannel = Channel<Truck>()
     val ports = 3 // Количество доступных портов разгрузки
     val portQueue = Channel<Truck>(Channel.UNLIMITED) // Очередь ожидания портов
     val portMutex = Mutex() // Мьютекс для контроля доступа к очереди портов
@@ -121,7 +121,7 @@ fun main() = runBlocking {
 
             if (portQueue.isEmpty) {
                 for (truck in uploadChannel) {
-                    if (uploadChannel.isEmpty) {
+                    if (portMutex.isLocked) {
                         println("${LocalTime.now()} - Грузовик № ${truck.id}, грузоподъемностью ${truck.loadCapacity} прибыл на порт ${portMutex.withLock { port }} для разгрузки")
                         delay(truck.uploadTime.toLong())
                         println("${LocalTime.now()} - Грузовик № ${truck.id} разгружен на порту ${portMutex.withLock { port }} за время ${truck.uploadTime}")
@@ -132,10 +132,15 @@ fun main() = runBlocking {
                 }
             } else {
                 for (truck in portQueue) {
-                    val portQ = portQueue.receive()
-                    println("${LocalTime.now()} - Грузовик № ${truck.id}, грузоподъемностью ${truck.loadCapacity} прибыл на порт ${portMutex.withLock { port }} для разгрузки из очереди № ${portQ.id}")
-                    delay(truck.uploadTime.toLong())
-                    println("${LocalTime.now()} - Грузовик № ${truck.id} разгружен на порту ${portMutex.withLock { port }} за время ${truck.uploadTime}")
+                    if (portMutex.isLocked.not()) {
+                        val portQ = portQueue.receive()
+                        println("${LocalTime.now()} - Грузовик № ${truck.id}, грузоподъемностью ${truck.loadCapacity} прибыл на порт ${portMutex.withLock { port }} для разгрузки из очереди № ${portQ.id}")
+                        delay(truck.uploadTime.toLong())
+                        println("${LocalTime.now()} - Грузовик № ${truck.id} разгружен на порту ${portMutex.withLock { port }} за время ${truck.uploadTime}")
+                    }else {
+                        portQueue.send(truck)
+                        println("${LocalTime.now()} - Грузовик № ${truck.id} встал в очередь")
+                    }
                 }
             }
         }
